@@ -1,47 +1,171 @@
-<!DOCTYPE html>
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Qontrax — Каталог автоматики Siemens</title>
-    <meta name="description" content="Официальный каталог промышленной автоматики Siemens. Синхронизация с simecs.ru.">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Qontrax — Поставки Siemens</title>
     <style>
-        body { font-family: Arial; max-width: 800px; margin: 0 auto; padding: 20px; line-height: 1.6; }
-        .rekv { background: #f0f0f0; padding: 20px; border-radius: 8px; margin: 20px 0; }
-        h1, h2 { color: #333; }
-        ul { list-style-type: disc; padding-left: 20px; }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        header {
+            background: #fff;
+            border-bottom: 1px solid #ddd;
+            padding: 20px 0;
+            text-align: center;
+        }
+        header h1 {
+            margin: 0;
+            font-size: 2.5rem;
+            color: #1a73e8;
+        }
+        nav {
+            margin: 20px 0;
+            text-align: center;
+        }
+        nav a {
+            color: #1a73e8;
+            text-decoration: none;
+            margin: 0 15px;
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+        nav a:hover {
+            color: #0056b3;
+        }
+        section {
+            background: #fff;
+            padding: 40px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        section h2 {
+            font-size: 1.8rem;
+            margin-top: 0;
+            color: #333;
+        }
+        .requisites, .contacts {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 10px;
+        }
+        .requisites p, .contacts p {
+            margin: 5px 0;
+            font-size: 1rem;
+        }
+        .contacts a {
+            color: #1a73e8;
+            text-decoration: none;
+        }
+        .contacts a:hover {
+            text-decoration: underline;
+        }
+        footer {
+            text-align: center;
+            padding: 20px 0;
+            border-top: 1px solid #ddd;
+            margin-top: 20px;
+            font-size: 0.9rem;
+            color: #666;
+        }
+        @media (max-width: 768px) {
+            header h1 { font-size: 1.8rem; }
+            section { padding: 20px; }
+            nav a { display: block; margin: 10px 0; }
+        }
     </style>
 </head>
 <body>
     <header>
-        <h1>Qontrax — Промышленная автоматика Siemens</h1>
-        <p>Официальный поставщик. Каталог товаров с синхронизацией наличия и цен с simecs.ru. В разработке: полный онлайн-каталог.</p>
+        <h1>Qontrax</h1>
+        <nav>
+            <a href="/">Главная</a>
+            <a href="/catalog.html">Каталог товаров</a>
+            <a href="#contacts">Контакты</a>
+        </nav>
     </header>
-    
-    <section class="rekv">
-        <h2>Реквизиты компании</h2>
-        <ul>
-            <li><strong>ИП</strong> Герасимюк Диана Юрьевна</li>
-            <li><strong>ИНН:</strong> 402911899700</li>
-            <li><strong>Адрес:</strong> Москва, Троицк, ул. Полковника Милиции Курочкина, 8</li>
-            <li><strong>Контакты:</strong> s7-1200@bk.ru | +7 (901) 578-51-79</li>
-        </ul>
-        <p><strong>Проект:</strong> SyncSimecs — внутреннее приложение для автоматизации цен и наличия. Интеграция с Avito API для профиля Qontrax.</p>
-    </section>
-    
-    <section>
-        <h2>Услуги</h2>
-        <ul>
-            <li>Поставка Siemens (ПЛК, панели оператора, преобразователи частоты, источники питания и т.д.).</li>
-            <li>Синхронизация с simecs.ru (наличие, цены без НДС).</li>
-            <li>Онлайн-заказы (скоро).</li>
-        </ul>
-    </section>
-    
-    <p><a href="catalog.html">Каталог товаров</a></p>
-    
+
+    <div class="container">
+        <section id="about">
+            <h2>О нас</h2>
+            <p>Qontrax — ваш надёжный поставщик промышленной автоматики Siemens. Мы предлагаем оригинальные компоненты с гарантией 12 месяцев, обеспечивая быструю доставку и гибкие условия оплаты (Авито доставка, СБП, безналичный расчёт с НДС или без). Наш каталог включает силовые модули, контакторы, модули аналоговых входов и другие решения для автоматизации.</p>
+            <p>Работаем с частными лицами и бизнесом, обеспечивая полное соответствие продукции стандартам Siemens. Ознакомьтесь с нашим <a href="/catalog.html">каталогом</a> или свяжитесь с нами для консультации.</p>
+        </section>
+
+        <section id="requisites">
+            <h2>Банковские реквизиты</h2>
+            <div class="requisites">
+                <p><strong>ИП:</strong> Герасимюк Диана Юрьевна</p>
+                <p><strong>ИНН:</strong> 402911899700</p>
+                <p><strong>Расчётный счёт:</strong> 40802810102010001698</p>
+                <p><strong>Банк:</strong> АО "АЛЬФА-БАНК", г. Москва</p>
+                <p><strong>Корреспондентский счёт:</strong> 30101810200000000593</p>
+                <p><strong>БИК:</strong> 044525593</p>
+            </div>
+        </section>
+
+        <section id="contacts">
+            <h2>Контакты</h2>
+            <div class="contacts">
+                <p><strong>Адрес:</strong> Москва, Троицк, ул. Полковника Милиции Курочкина, 8</p>
+                <p><strong>Email:</strong> <a href="mailto:s7-1200@bk.ru">s7-1200@bk.ru</a></p>
+                <p><strong>Телефон:</strong> <a href="tel:+79015785179">+7 (901) 578-51-79</a></p>
+            </div>
+        </section>
+    </div>
+
     <footer>
-        <p>© 2025 Qontrax. Все права защищены. <a href="https://qontrax.ru/callback">Авторизация API</a>.</p>
+        <p>© 2025 Qontrax. Все права защищены.</p>
     </footer>
 </body>
-
 </html>
